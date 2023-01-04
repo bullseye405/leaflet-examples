@@ -1,57 +1,55 @@
-import { LatLngExpression, icon } from "leaflet";
-import { MapContainer, TileLayer, Marker, Tooltip, useMapEvents } from "react-leaflet";
-import "./App.css";
-import { Place, places } from "./places";
+import { LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { GeoJSON, MapContainer, TileLayer } from "react-leaflet";
+import "./App.css";
+import world from "./geojson/world.json";
 
-import marker from "leaflet/dist/images/marker-icon.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
-import { useState } from "react";
+import { useRef } from "react";
+import { statesData } from "./states";
+import { highlightFeature, style } from "./utils";
+// import { useState } from "react";
 
-let markerIcon = icon({
-  iconUrl: marker,
-  iconRetinaUrl: marker,
-});
-
-const AddMarker = () => {
-  const [position, setPosition] = useState<LatLngExpression | null>(null);
-
-  useMapEvents({
-    click: (e) => {
-      setPosition(e.latlng); // 👈 add marker
-
-      /* CODE TO ADD NEW PLACE TO STORE (check the source code) */
-    },
-  });
-
-  return position === null ? null : <Marker position={position} icon={markerIcon}></Marker>;
-};
+// let markerIcon = icon({
+//   iconUrl: marker,
+//   iconRetinaUrl: marker,
+// });
 
 const App = () => {
-  const defaultPosition: LatLngExpression = [48.864716, 2.349]; // Paris position
+  const defaultPosition: LatLngExpression = [37.8, -96];
+  const zoom = 4;
 
-  const showPreview = (place: Place) => {
-    console.log({ place });
-  };
+  const geojson = useRef<any>();
+  const mapRef = useRef<any>();
 
   return (
     <div className="map__container">
-      <MapContainer center={defaultPosition} zoom={13}>
-        <AddMarker />
-        {/* {places.map((place) => (
-          <Marker
-            key={place.id}
-            position={place.position} // 👈
-            eventHandlers={{ click: () => showPreview(place) }}
-            icon={loveIcon}
-          >
-            <Tooltip>{place.title}</Tooltip>
-          </Marker>
-        ))} */}
-        <TileLayer
-          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      <MapContainer
+        center={defaultPosition}
+        zoom={zoom}
+        ref={mapRef}
+        style={{ backgroundColor: "#c5e8ff" }}
+      >
+        <GeoJSON
+          ref={geojson}
+          data={world as any}
+          style={style as any}
+          onEachFeature={(feature, layer: any) => {
+            layer.on({
+              mouseover: highlightFeature,
+              mouseout: (e: any) => {
+                geojson.current.resetStyle(e.target);
+              },
+              click: (e: any) => {
+                mapRef.current.fitBounds(e.target.getBounds());
+              },
+            });
+          }}
         />
+
+        {/* <TileLayer
+          attribution='&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        /> */}
       </MapContainer>
     </div>
   );
